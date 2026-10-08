@@ -1,0 +1,14 @@
+.git
+.venv
+**/__pycache__
+.env
+.env.*
+node_modules
+data
+logs
+
+**/node_modules
+**/dist
+**/.pytest_cache
+**/.mypy_cache
+**/target

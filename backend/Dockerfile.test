@@ -1,0 +1,11 @@
+FROM python:3.12-slim
+WORKDIR /workspace/backend
+COPY backend/pyproject.toml backend/requirements-dev.lock ./
+COPY backend/app ./app
+COPY backend/tests ./tests
+COPY pipelines /workspace/pipelines
+COPY scripts /workspace/scripts
+COPY database /workspace/database
+ENV PYTHONPATH=/workspace
+RUN pip install --no-cache-dir --require-hashes -r requirements-dev.lock && pip install --no-cache-dir --no-deps .
+CMD ["pytest", "-q", "tests", "/workspace/pipelines/tests"]

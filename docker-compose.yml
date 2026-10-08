@@ -1,0 +1,103 @@
+services:
+  postgres:
+    image: postgres:16.6-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-datapulse}
+      POSTGRES_USER: ${POSTGRES_USER:-datapulse}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Copy .env.example to .env first}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL: ""
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-datapulse}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-datapulse}
+      ADMIN_API_KEY: ${ADMIN_API_KEY:-}
+      CORS_ORIGINS: '["http://localhost:5173"]'
+    volumes:
+      - pipeline_data:/workspace/backend/data
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+  tests:
+    profiles: ["test"]
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.test
+    environment:
+      TEST_DATABASE_URL: auto
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-datapulse}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-datapulse}
+    depends_on:
+      postgres:
+        condition: service_healthy
+  spark:
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports: ["127.0.0.1:8001:8000"]
+    profiles: ["advanced"]
+    build:
+      context: .
+      dockerfile: pipelines/spark/Dockerfile
+    environment:
+      DATABASE_URL: ""
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-datapulse}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-datapulse}
+      TEST_DATABASE_URL: auto
+      ADMIN_API_KEY: ${ADMIN_API_KEY}
+      RUN_SPARK_TESTS: "1"
+      PYSPARK_SUBMIT_ARGS: --driver-memory 512m pyspark-shell
+      DATA_ROOT: /workspace/backend/data
+    volumes:
+      - pipeline_data:/workspace/backend/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+  airflow:
+    profiles: ["orchestration"]
+    image: apache/airflow:2.10.5
+    command: standalone
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      DATAPULSE_API_URL: ${DATAPULSE_API_URL:-http://api:8000}
+      ADMIN_API_KEY: ${ADMIN_API_KEY}
+    ports: ["127.0.0.1:8080:8080"]
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - airflow_data:/opt/airflow
+    depends_on: [api]
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports: ["127.0.0.1:5173:80"]
+    depends_on: [api]
+volumes:
+  postgres_data:
+  pipeline_data:
+  airflow_data:

@@ -1,0 +1,9 @@
+services:
+  api:
+    volumes:
+      - ./backend/app:/workspace/backend/app:ro
+      - ./pipelines:/workspace/pipelines:ro
+  frontend:
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html:ro
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro

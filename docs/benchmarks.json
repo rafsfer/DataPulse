@@ -1,0 +1,32 @@
+[
+  {
+    "volume": 1000,
+    "seconds": 11.125,
+    "id": "57f146c0-3545-4319-8843-7208683d33ec",
+    "batch_id": "6f19aac0b52ecd5eadabd3639f7a0c3596d5a4168c8341167639095fb88da135",
+    "status": "success",
+    "total": 1000,
+    "valid": 900,
+    "quarantined": 100
+  },
+  {
+    "volume": 10000,
+    "seconds": 16.0,
+    "id": "c080e9ba-47cc-4a4c-9dc8-fad5b0caaff2",
+    "batch_id": "6570e2329787017899631221f5b43b63b4e1564e3256390108fb96baf54aaecf",
+    "status": "success",
+    "total": 10000,
+    "valid": 9000,
+    "quarantined": 1000
+  },
+  {
+    "volume": 100000,
+    "seconds": 110.735,
+    "id": "ed387d22-4641-43b6-b50b-bbeb89a65766",
+    "batch_id": "e6168e926da4ae60f07a2efe8e5c332e807e5cacb0762e53ac102dbfc9a015e6",
+    "status": "success",
+    "total": 100000,
+    "valid": 90000,
+    "quarantined": 10000
+  }
+]
