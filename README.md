@@ -1,50 +1,54 @@
-# DataPulse — Data Reliability & Intelligence Platform
+# DataPulse — Plataforma de Confiabilidade e Inteligência de Dados
 
-Data reliability and commercial analytics for the fictional Atlas Commerce business.
-The system processes real synthetic source files, preserves original records,
-quarantines invalid orders and publishes validated analytical results to PostgreSQL.
-The React dashboard reads the API; indicators are never generated in the browser.
+Confiabilidade de dados e análise comercial para a empresa fictícia Atlas Commerce.
+O sistema processa arquivos reais com dados sintéticos, preserva os registros originais,
+coloca pedidos inválidos em quarentena e publica resultados analíticos validados no PostgreSQL.
+O painel React consulta a API; os indicadores nunca são gerados no navegador.
 
-![Real dashboard capture](docs/screenshots/overview.png)
+![Captura real do painel](docs/screenshots/overview.png)
 
-## Delivery status
+## Estado da entrega
 
-Core ingestion, quality validation, Parquet layers, PostgreSQL serving, administrative
-API, incident retry and dashboard are implemented. Optional PySpark, Scala and Airflow
-modules are implemented and have separate verification requirements. Check the
-[executed delivery ledger](docs/delivery-status.md) for actual results and remaining
-limitations; source availability does not mean its tests have passed.
+A ingestão principal, a validação de qualidade, as camadas Parquet, a disponibilização
+de dados no PostgreSQL, a API administrativa, a reexecução de incidentes e o painel
+estão implementados. Os módulos opcionais de PySpark, Scala e Airflow estão implementados
+e possuem requisitos próprios de verificação. Consulte o
+[registro das entregas e verificações executadas](docs/delivery-status.md) para conhecer
+os resultados reais e as limitações restantes; a disponibilidade do código não significa
+que seus testes tenham sido aprovados.
 
-## Business problem and solution
+## Problema de negócio e solução
 
-Duplicate orders, invalid money values, inconsistent identifiers, missing customer
-and product references, and stale records distort commerce reporting. DataPulse
-retains evidence of each validation rule, isolates rejected rows, and serves quality
-and operational metrics alongside validated regional/category sales aggregates.
+Pedidos duplicados, valores monetários inválidos, identificadores inconsistentes,
+referências ausentes a clientes e produtos e registros desatualizados distorcem os
+relatórios comerciais. O DataPulse mantém evidências de cada regra de validação,
+isola as linhas rejeitadas e disponibiliza métricas de qualidade e operação junto
+com agregações validadas de vendas por região e categoria.
 
-## Architecture and stack
+## Arquitetura e tecnologias
 
-CSV/demo API → Bronze → validation/quarantine → Silver → Gold → PostgreSQL →
-FastAPI → React. See the [architecture diagram](docs/architecture/overview.md),
-[decisions](docs/decisions/001-modular-architecture.md), and
-[Portuguese explanation](docs/architecture/arquitetura-pt.md).
+CSV/API de demonstração → Bronze → validação/quarentena → Silver → Gold → PostgreSQL →
+FastAPI → React. Consulte o [diagrama de arquitetura](docs/architecture/overview.md),
+as [decisões de arquitetura](docs/decisions/001-modular-architecture.md) e a
+[explicação da arquitetura em português](docs/architecture/arquitetura-pt.md).
 
-Python 3.12, FastAPI, Pydantic, SQLAlchemy, Pandas, Parquet/PyArrow, PostgreSQL 16.6;
-React, TypeScript, Vite, Tailwind, Recharts and TanStack Query. Optional profiles:
-PySpark 3.5.4, Java 17, Scala and Apache Airflow. Docker Compose and GitHub Actions
-provide local execution and automated checks. No paid cloud account is required.
+Python 3.12, FastAPI, Pydantic, SQLAlchemy, Pandas, Parquet/PyArrow e PostgreSQL 16.6;
+React, TypeScript, Vite, Tailwind, Recharts e TanStack Query. Perfis opcionais:
+PySpark 3.5.4, Java 17, Scala e Apache Airflow. Docker Compose e GitHub Actions
+permitem a execução local e verificações automatizadas. Não é necessária uma conta
+paga em serviços de nuvem.
 
-## Setup and startup
+## Configuração e inicialização
 
-Requirements: Docker Desktop with working WSL 2/Linux containers on Windows, or
-Docker Engine with Compose on Linux/macOS. Install Python 3.12 for local tools.
-Node 22.12+ is required only when running frontend development outside Docker.
+Requisitos: Docker Desktop com WSL 2 e contêineres Linux funcionando no Windows,
+ou Docker Engine com Compose no Linux/macOS. Instale o Python 3.12 para as ferramentas locais.
+O Node 22.12 ou superior é necessário apenas para desenvolver o frontend fora do Docker.
 
 Windows:
 
 ```powershell
 Copy-Item .env.example .env
-# Configure PostgreSQL credentials and a random ADMIN_API_KEY in .env.
+# Configure as credenciais do PostgreSQL e uma ADMIN_API_KEY aleatória no .env.
 py -3.12 -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -e "./backend[dev]"
@@ -53,77 +57,84 @@ python scripts/migrate.py
 docker compose up --build -d api frontend
 ```
 
-Linux/macOS: use `cp .env.example .env`, `python3.12 -m venv .venv` and
-`source .venv/bin/activate`, then the same pip, migration and Compose commands.
-If uv manages your interpreter: `uv venv --python 3.12 .venv`.
-Preserve an existing .venv rather than recreating it on each run.
+Linux/macOS: use `cp .env.example .env`, `python3.12 -m venv .venv` e
+`source .venv/bin/activate`; depois, execute os mesmos comandos de pip, migração e Compose.
+Se o uv gerencia seu interpretador: `uv venv --python 3.12 .venv`.
+Preserve o ambiente .venv existente em vez de recriá-lo a cada execução.
 
-- Dashboard: http://localhost:5173
+- Painel: http://localhost:5173
 - API / OpenAPI: http://localhost:8000/docs
-- Readiness: http://localhost:8000/api/health (real PostgreSQL query)
+- Verificação de prontidão: http://localhost:8000/api/health (consulta real ao PostgreSQL)
 
-Compose constructs connection URLs safely from POSTGRES_* fields. Local Python
-uses DATABASE_URL; URL-encode special characters in its password. Do not publish
-.env. The example administrative key must be replaced. Enter your local key in the
-Pipelines or Incidents page; it is kept only in browser memory.
+O Compose monta as URLs de conexão de forma segura a partir dos campos POSTGRES_*.
+O Python local usa DATABASE_URL; codifique os caracteres especiais da senha para uso
+em URLs. Não publique o .env. A chave administrativa de exemplo deve ser substituída.
+Informe sua chave local na página de pipelines (Pipelines) ou de incidentes (Incidents);
+ela é mantida apenas na memória do navegador.
 
-For live backend source updates, use the development override:
+Para atualizar o código do backend durante o desenvolvimento, use a configuração adicional:
 `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d api frontend`.
-The override mounts application code read-only and is intended for local development.
+Essa configuração monta o código da aplicação em modo somente leitura e destina-se
+ao desenvolvimento local.
 
-## Run a real data pipeline
+## Execução de um pipeline real de dados
 
-From the repository root with the environment activated:
+Na raiz do repositório, com o ambiente virtual ativado:
 
 ```bash
 python -m pipelines.ingestion.generator --volume 1000 --output data/generated/demo
 python -m pipelines.runner --source data/generated/demo --as-of 2026-10-07T12:00:00+00:00
 ```
 
-Repeat with 10000 or 100000. The CLI fixture uses a fixed historical reference date
-for reproducibility. HTTP demonstrations use UTC midnight of the current day, so
-identical requests within the day generate identical source batches.
+Repita com 10000 ou 100000 registros. O conjunto de dados de teste da linha de comando
+usa uma data histórica fixa como referência para garantir a reprodutibilidade.
+As demonstrações HTTP usam a meia-noite UTC do dia atual; assim, solicitações idênticas
+no mesmo dia geram lotes de origem idênticos.
 
-API ingestion:
+Ingestão pela API:
 
 ```bash
 python -m pipelines.ingestion.api --url http://localhost:8000 --output data/generated/api
 python -m pipelines.runner --source data/generated/api
 ```
 
-Run the same batch twice: its content hash is unchanged, serving facts and Gold
-aggregates are replaced transactionally, and execution history retains both attempts.
-A PostgreSQL advisory lock rejects overlapping commerce runs.
+Execute o mesmo lote duas vezes: seu hash de conteúdo permanece igual, os dados
+analíticos disponibilizados e as agregações Gold são substituídos em uma transação,
+e o histórico de execução mantém as duas tentativas. Um bloqueio consultivo
+(advisory lock) do PostgreSQL rejeita execuções comerciais simultâneas.
 
-## Requests and incident demonstration
+## Requisições e demonstração de incidentes
 
 ```bash
 curl http://localhost:8000/api/datasets
 curl http://localhost:8000/api/kpis
 curl http://localhost:8000/api/analytics
 curl -X POST http://localhost:8000/api/pipelines/commerce/run \
-  -H "Content-Type: application/json" -H "X-API-Key: YOUR_LOCAL_KEY" \
+  -H "Content-Type: application/json" -H "X-API-Key: SUA_CHAVE_LOCAL" \
   -d '{"volume":1000,"seed":42}'
 ```
 
-Select “Inject validation failure” on Pipelines to produce a real HTTP failure,
-failed execution and incident. On Incidents, enter your key and retry the incident.
-The retry reuses its source and validation reference. Resolved or already claimed
-incidents reject a second retry. No failed operation is reported as success.
+Na página Pipelines, selecione “Inject validation failure” (injetar falha de validação)
+para produzir uma falha HTTP real, uma execução com falha e um incidente. Na página
+Incidents, informe sua chave e solicite a reexecução do incidente. A reexecução reutiliza
+a origem e a referência de validação. Incidentes resolvidos ou já reservados para
+reexecução rejeitam uma segunda tentativa. Nenhuma operação com falha é apresentada
+como bem-sucedida.
 
-## Checks
+## Verificações
 
-Windows integration tests:
+Testes de integração no Windows:
 
 ```powershell
 $env:TEST_DATABASE_URL='auto'
 python -m pytest -q -c backend/pyproject.toml backend/tests pipelines/tests
 ```
 
-Linux/macOS: prefix the pytest command with `TEST_DATABASE_URL=auto`.
-This selects the configured real PostgreSQL database. Prefer a dedicated test DB;
-integration and smoke checks persist synthetic execution history and intentional
-incidents. Tests can explicitly skip integration when that variable is absent.
+Linux/macOS: acrescente `TEST_DATABASE_URL=auto` antes do comando pytest.
+Isso seleciona o banco PostgreSQL real configurado. Prefira um banco dedicado a testes;
+as verificações de integração e de funcionamento básico persistem o histórico de
+execuções sintéticas e incidentes intencionais. Os testes podem ignorar explicitamente
+a integração quando essa variável não estiver definida.
 
 ```bash
 ruff check backend pipelines scripts airflow
@@ -133,56 +144,62 @@ python -m scripts.smoke
 python -m scripts.benchmark
 ```
 
-Frontend: `cd frontend`, `npm ci`, `npm test`, `npm run build`. Dependencies are
-recorded in package-lock.json. The Docker test profile can execute backend checks:
-`docker compose --profile test run --build --rm tests`.
-GitHub Actions checks Python, PostgreSQL integration, TypeScript/frontend build,
-and Docker configuration. A configured workflow is not a claimed remote CI pass.
+Frontend: `cd frontend`, `npm ci`, `npm test`, `npm run build`. As dependências estão
+registradas em package-lock.json. O perfil de testes do Docker pode executar as
+verificações do backend: `docker compose --profile test run --build --rm tests`.
+O GitHub Actions verifica Python, integração com PostgreSQL, compilação do frontend
+com TypeScript e configuração do Docker. Ter um fluxo de integração contínua configurado
+não significa que sua execução remota tenha sido aprovada.
 
-## Quality, KPIs and governance
+## Qualidade, indicadores e governança
 
-See [rule definitions and dictionary](docs/data-dictionary.md),
-[KPI formulas and denominators](docs/kpi-definitions.md),
-[governance and retention](docs/governance.md), and [operations](docs/runbook.md).
-A default 1000-row fixture contains 900 valid orders and 100 rejected rows. Each
-rejected row preserves original values and all violated rule IDs. Rule outcomes
-include run, dataset, severity, timestamp, affected count and result.
+Consulte as [definições de regras e o dicionário de dados](docs/data-dictionary.md),
+as [fórmulas e os denominadores dos indicadores](docs/kpi-definitions.md),
+a [governança e retenção](docs/governance.md) e os [procedimentos operacionais](docs/runbook.md).
+O conjunto de teste padrão de 1000 linhas contém 900 pedidos válidos e 100 linhas
+rejeitadas. Cada linha rejeitada preserva os valores originais e os identificadores
+de todas as regras violadas. Os resultados das regras incluem execução, conjunto
+de dados, severidade, data e hora, quantidade afetada e resultado.
 
-[Measured benchmark results](docs/benchmarks.json) reflect this local session:
-1000 rows in 11.125s; 10000 in 16.000s; 100000 in 110.735s. Builds were active
-and resources were constrained; these are not production throughput claims.
+Os [resultados medidos de desempenho](docs/benchmarks.json) refletem esta sessão local:
+1000 linhas em 11,125 s; 10000 em 16,000 s; 100000 em 110,735 s. Havia compilações
+em andamento e recursos limitados; esses valores não representam a capacidade
+de processamento em produção.
 
-## Advanced profiles and limitations
+## Perfis avançados e limitações
 
-See [Spark, Scala and Airflow instructions](docs/advanced-processing.md).
-Run optional profiles sequentially on constrained machines. The Airflow DAG groups
-processing into an atomic backend task; independently resumable stage tasks remain
-pending. Airflow standalone metadata is local SQLite; all application data is PostgreSQL.
+Consulte as [instruções de Spark, Scala e Airflow](docs/advanced-processing.md).
+Execute os perfis opcionais sequencialmente em máquinas com recursos limitados.
+O DAG do Airflow agrupa o processamento em uma tarefa atômica do backend; tarefas
+por etapa com retomada independente continuam pendentes. Os metadados do Airflow
+em modo independente usam SQLite local; todos os dados da aplicação usam PostgreSQL.
 
-Remaining hardening: full stage-level Airflow recovery, automatic retention,
-reconciliation of runs interrupted by process termination, a complete Python
-transitive lock, broader dataset-domain validation, and expanded browser interaction
-tests. Payments and inventory are not yet modeled; current analytics covers orders,
-customers and products. Do not describe this local portfolio setup as production-ready.
+Melhorias pendentes: recuperação completa por etapa no Airflow, retenção automática,
+reconciliação de execuções interrompidas pelo encerramento do processo, um arquivo
+completo de versões fixadas das dependências transitivas do Python, validação mais
+abrangente dos domínios dos conjuntos de dados e ampliação dos testes de interação
+no navegador. Pagamentos e estoque ainda não estão modelados; as análises atuais
+abrangem pedidos, clientes e produtos. Esta configuração local de portfólio não
+deve ser apresentada como pronta para produção.
 
-## GitHub presentation
+## Apresentação no GitHub
 
-Description: Data reliability platform for reproducible commerce pipelines,
-auditable quality validation and operational analytics.
-Topics: data-engineering, data-quality, python, fastapi, postgresql, pyspark,
+Descrição: Plataforma de confiabilidade de dados para pipelines comerciais
+reprodutíveis, validação auditável de qualidade e análises operacionais.
+Tópicos: data-engineering, data-quality, python, fastapi, postgresql, pyspark,
 airflow, scala, react, portfolio.
 
-Use real Conventional Commits as changes are reviewed. Suggested sequence:
-`chore: initialize repository structure`, `feat: implement data ingestion`,
-`feat: add data quality validation`, `feat: implement pyspark transformations`,
-`feat: add airflow orchestration`, `feat: build monitoring dashboard`,
-`test: add pipeline integration tests`, `docs: document architecture and setup`.
-No artificial historical commits are created.
+Use Conventional Commits reais à medida que as alterações forem revisadas. Sequência sugerida:
+`chore: inicializar estrutura do repositório`, `feat: implementar ingestão de dados`,
+`feat: adicionar validação de qualidade dos dados`, `feat: implementar transformações com pyspark`,
+`feat: adicionar orquestração com airflow`, `feat: criar painel de monitoramento`,
+`test: adicionar testes de integração dos pipelines`, `docs: documentar arquitetura e configuração`.
+Não são criados commits artificiais para simular um histórico.
 
-## About the Developer
+## Sobre o desenvolvedor
 
-"Developed as a portfolio project by a 5th-semester Software Engineering student, with a focus on Data Engineering, Data Quality, Pipeline Orchestration, and Data Governance."
+"Desenvolvido como projeto de portfólio por um estudante do 5º semestre de Engenharia de Software, com foco em Engenharia de Dados, Qualidade de Dados, Orquestração de Pipelines e Governança de Dados."
 
-## License
+## Licença
 
-MIT. See [LICENSE](LICENSE).
+MIT. Consulte [LICENSE](LICENSE).
